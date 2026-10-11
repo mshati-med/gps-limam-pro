@@ -1,16 +1,25 @@
 name: gps_limam
-description: GPS LIMAM
+description: GPS LIMAM - Professional Live Tracker
 publish_to: 'none'
 version: 1.0.0+1
+
 environment:
-  sdk: ">=3.0.0 <4.0.0"
+  sdk: '>=3.0.0 <4.0.0'
+
 dependencies:
   flutter:
     sdk: flutter
-  flutter_map: ^6.1.0
-  latlong2: ^0.9.0
+  cupertino_icons: ^1.0.6
+  flutter_map: ^6.2.1
+  latlong2: ^0.9.1
   geolocator: ^12.0.0
-  shared_preferences: ^2.2.2
-  share_plus: ^7.2.0
+  shared_preferences: ^2.3.3
+  share_plus: ^7.2.2
+  firebase_core: ^2.32.0
+  cloud_firestore: ^4.17.0
+  firebase_auth: ^4.20.0
+  qr_flutter: ^4.1.0
+  url_launcher: ^6.2.5
+
 flutter:
   uses-material-design: true
