@@ -52,17 +52,17 @@ class _HomePageState extends State<HomePage> {
   final MapController _mapController = MapController();
   int _tab = 0;
   LatLng _center = const LatLng(18.0735, -15.9582);
-  String _status = 'الخريطة جاهزة — فعّل GPS';
+  String _status = 'الخريطة جاهزة - فعل GPS';
   bool _locating = false;
 
   Future<void> _locateMe() async {
-    setState(() { _locating = true; _status = 'جارٍ تحديد الموقع...'; });
+    setState(() { _locating = true; _status = 'جار تحديد الموقع...'; });
     try {
-      if (!await Geolocator.isLocationServiceEnabled()) { setState(()=>_status='شغّل GPS'); return; }
+      if (!await Geolocator.isLocationServiceEnabled()) { setState(()=>_status='شغل GPS'); return; }
       var p = await Geolocator.checkPermission();
       if (p == LocationPermission.denied) p = await Geolocator.requestPermission();
       if (p == LocationPermission.denied || p == LocationPermission.deniedForever) { setState(()=>_status='يلزم السماح بالموقع'); return; }
-      final pos = await Geolocator.getCurrentPosition(locationSettings: const LocationSettings(accuracy: LocationAccuracy.high, timeLimit: Duration(seconds: 20)));
+      final pos = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
       _center = LatLng(pos.latitude, pos.longitude);
       _mapController.move(_center, 15);
       setState(()=>_status='تم تحديد موقعك');
@@ -72,7 +72,6 @@ class _HomePageState extends State<HomePage> {
 
   @override Widget build(BuildContext context) {
     final pages = <Widget>[
-      // 0 الخريطة
       Stack(children: [
         FlutterMap(mapController: _mapController, options: MapOptions(initialCenter: _center, initialZoom: 11), children: [
           TileLayer(urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png', userAgentPackageName: 'com.gpslimam.app'),
@@ -81,33 +80,28 @@ class _HomePageState extends State<HomePage> {
         ]),
         Positioned(top: 14, right: 14, left: 14, child: Card(elevation: 4, child: Padding(padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12), child: Row(children: [
           const Icon(Icons.explore, color: Color(0xFF13B8D5), size: 30),
-          const Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text('GPS LIMAM', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17)), Text('خرائطك • أصدقاؤك • طريقك', style: TextStyle(fontSize: 12))])),
-          IconButton(tooltip: 'تبديل المظهر', onPressed: widget.onToggleTheme, icon: Icon(widget.isDark? Icons.light_mode : Icons.dark_mode)),
+          const Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text('GPS LIMAM', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17)), Text('خرائطك • اصدقاؤك • طريقك', style: TextStyle(fontSize: 12))])),
+          IconButton(onPressed: widget.onToggleTheme, icon: Icon(widget.isDark? Icons.light_mode : Icons.dark_mode)),
           IconButton(onPressed: (){ Share.share('موقعي: https://maps.google.com/?q=${_center.latitude},${_center.longitude}'); }, icon: const Icon(Icons.share)),
         ])))),
         Positioned(bottom: 22, right: 16, child: FloatingActionButton(heroTag: 'locate', onPressed: _locating? null : _locateMe, child: _locating? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.my_location))),
         Positioned(bottom: 24, left: 16, child: Container(padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8), decoration: BoxDecoration(color: Theme.of(context).colorScheme.surface.withValues(alpha:.94), borderRadius: BorderRadius.circular(14)), child: Text(_status, style: const TextStyle(fontSize: 12)))),
       ]),
-      // 1 الأصدقاء
       const FriendsPage(),
-      // 2 الدردشة
       const ChatPage(),
-      // 3 خرائطي
-      Center(child: Padding(padding: const EdgeInsets.all(28), child: Column(mainAxisSize: MainAxisSize.min, children: [Icon(Icons.download_for_offline_outlined, size: 64, color: Theme.of(context).colorScheme.primary), const SizedBox(height: 16), const Text('الخرائط المحفوظة قريبا'), const SizedBox(height: 8), const Text('سنضيف تنزيل مناطق للعمل بدون انترنت', textAlign: TextAlign.center)]))),
-      // 4 الإعدادات
+      const Center(child: Text('الخرائط المحفوظة قريبا - Offline')),
       const SettingsPage(),
     ];
     return Scaffold(body: SafeArea(child: pages[_tab]), bottomNavigationBar: NavigationBar(selectedIndex: _tab, onDestinationSelected: (i)=>setState(()=>_tab=i), destinations: const [
       NavigationDestination(icon: Icon(Icons.map_outlined), selectedIcon: Icon(Icons.map), label: 'الخريطة'),
-      NavigationDestination(icon: Icon(Icons.people_outline), selectedIcon: Icon(Icons.people), label: 'الأصدقاء'),
+      NavigationDestination(icon: Icon(Icons.people_outline), selectedIcon: Icon(Icons.people), label: 'الاصدقاء'),
       NavigationDestination(icon: Icon(Icons.chat_outlined), selectedIcon: Icon(Icons.chat), label: 'الدردشة'),
       NavigationDestination(icon: Icon(Icons.download_outlined), selectedIcon: Icon(Icons.download), label: 'خرائطي'),
-      NavigationDestination(icon: Icon(Icons.settings_outlined), selectedIcon: Icon(Icons.settings), label: 'الإعدادات'),
+      NavigationDestination(icon: Icon(Icons.settings_outlined), selectedIcon: Icon(Icons.settings), label: 'الاعدادات'),
     ]));
   }
 }
 
-// ============ صفحة الأصدقاء - ربط برمز ============
 class FriendsPage extends StatefulWidget { const FriendsPage({super.key}); @override State<FriendsPage> createState() => _FriendsPageState(); }
 class _FriendsPageState extends State<FriendsPage> {
   String myCode = ''; String partner = ''; final _ctrl = TextEditingController();
@@ -115,7 +109,7 @@ class _FriendsPageState extends State<FriendsPage> {
   Future<void> _load() async {
     final p = await SharedPreferences.getInstance();
     String code = p.getString('my_code')?? '';
-    if(code.isEmpty){ code = (100000 + DateTime.now().millisecond * 123 % 900000).toString().substring(0,6); await p.setString('my_code', code); }
+    if(code.isEmpty){ code = (100000 + DateTime.now().millisecondsSinceEpoch % 900000).toString(); await p.setString('my_code', code); }
     setState(() { myCode = code; partner = p.getString('partner_code')?? ''; });
   }
   Future<void> _link() async {
@@ -123,7 +117,7 @@ class _FriendsPageState extends State<FriendsPage> {
     final p = await SharedPreferences.getInstance();
     await p.setString('partner_code', _ctrl.text.trim());
     setState(()=> partner = _ctrl.text.trim());
-    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم الربط! اذهب للدردشة')));
+    if(mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم الربط! اذهب للدردشة')));
   }
   Future<void> _unlink() async {
     final p = await SharedPreferences.getInstance();
@@ -135,21 +129,20 @@ class _FriendsPageState extends State<FriendsPage> {
         const Text('رمزك الخاص'), const SizedBox(height: 8),
         Text(myCode, style: const TextStyle(fontSize: 36, fontWeight: FontWeight.bold, letterSpacing: 5)),
         const SizedBox(height: 8),
-        ElevatedButton.icon(onPressed: ()=> Share.share('رمز GPS LIMAM الخاص بي: $myCode'), icon: const Icon(Icons.share), label: const Text('شارك رمزك مع شريكك')),
+        ElevatedButton.icon(onPressed: ()=> Share.share('رمز GPS LIMAM الخاص بي: $myCode'), icon: const Icon(Icons.share), label: const Text('شارك رمزك')),
       ]))),
       const SizedBox(height: 20),
       if(partner.isEmpty)...[
-        TextField(controller: _ctrl, decoration: const InputDecoration(labelText: 'أدخل رمز شريكك', border: OutlineInputBorder())),
+        TextField(controller: _ctrl, decoration: const InputDecoration(labelText: 'ادخل رمز شريكك', border: OutlineInputBorder())),
         const SizedBox(height: 12),
-        FilledButton(onPressed: _link, child: const Text('ربط الآن')),
+        FilledButton(onPressed: _link, child: const Text('ربط الان')),
       ] else...[
-        Card(color: Colors.green.withOpacity(0.15), child: ListTile(leading: const Icon(Icons.link, color: Colors.green), title: Text('مرتبط مع: $partner'), subtitle: const Text('يمكنكم الآن الدردشة وإرسال المواقع'), trailing: IconButton(icon: const Icon(Icons.link_off), onPressed: _unlink))),
+        Card(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.15), child: ListTile(leading: const Icon(Icons.link, color: Colors.green), title: Text('مرتبط مع: $partner'), subtitle: const Text('يمكنكم الدردشة الان'), trailing: IconButton(icon: const Icon(Icons.link_off), onPressed: _unlink))),
       ],
     ]));
   }
 }
 
-// ============ صفحة الدردشة بين شخصين ============
 class ChatPage extends StatefulWidget { const ChatPage({super.key}); @override State<ChatPage> createState() => _ChatPageState(); }
 class _ChatPageState extends State<ChatPage> {
   final _msgCtrl = TextEditingController(); List<Map> _msgs = []; String partner = '';
@@ -174,29 +167,28 @@ class _ChatPageState extends State<ChatPage> {
     try{
       var perm = await Geolocator.checkPermission();
       if(perm==LocationPermission.denied) perm = await Geolocator.requestPermission();
-      final pos = await Geolocator.getCurrentPosition();
-      _send('📍 https://maps.google.com/?q=${pos.latitude},${pos.longitude}', loc: true);
+      final pos = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
+      _send('https://maps.google.com/?q=${pos.latitude},${pos.longitude}', loc: true);
     } catch(_){}
   }
   @override Widget build(BuildContext context) {
     if(partner.isEmpty){
-      return const Center(child: Padding(padding: EdgeInsets.all(28), child: Text('اذهب لتبويب الأصدقاء واربط مع شريكك أولا لتبدأ الدردشة', textAlign: TextAlign.center)));
+      return const Center(child: Padding(padding: EdgeInsets.all(28), child: Text('اذهب لتبويب الاصدقاء واربط مع شريكك اولا', textAlign: TextAlign.center)));
     }
     return Column(children: [
-      ListTile(title: Text('شريكي: $partner'), subtitle: const Text('محادثة خاصة'), trailing: IconButton(icon: const Icon(Icons.my_location), onPressed: _sendLocation)),
+      ListTile(title: Text('شريكي: $partner'), trailing: IconButton(icon: const Icon(Icons.my_location), onPressed: _sendLocation)),
       const Divider(height: 1),
       Expanded(child: ListView.builder(itemCount: _msgs.length, padding: const EdgeInsets.all(12), itemBuilder: (c,i){
         var m = _msgs[i];
         return Align(alignment: m['me']? Alignment.centerRight : Alignment.centerLeft, child: Container(margin: const EdgeInsets.symmetric(vertical: 4), padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10), decoration: BoxDecoration(color: m['me']? const Color(0xFF13B8D5) : Theme.of(context).colorScheme.surfaceContainerHighest, borderRadius: BorderRadius.circular(16)), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          if(m['loc']==true) InkWell(onTap: (){ Share.share(m['text']); }, child: Text(m['text'], style: const TextStyle(color: Colors.white, decoration: TextDecoration.underline))),
-          if(m['loc']!=true) Text(m['text'], style: TextStyle(color: m['me']? Colors.white : null)),
+          Text(m['text'], style: TextStyle(color: m['me']? Colors.white : null)),
           const SizedBox(height: 2),
           Text(m['time'], style: TextStyle(fontSize: 10, color: m['me']? Colors.white70 : Colors.grey)),
         ])));
       })),
       SafeArea(child: Padding(padding: const EdgeInsets.all(8), child: Row(children: [
         IconButton(icon: const Icon(Icons.location_on, color: Colors.red), onPressed: _sendLocation),
-        Expanded(child: TextField(controller: _msgCtrl, decoration: const InputDecoration(hintText: 'اكتب رسالة...', border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8)), onSubmitted: (v)=>_send(v))),
+        Expanded(child: TextField(controller: _msgCtrl, decoration: const InputDecoration(hintText: 'اكتب رسالة...', border: OutlineInputBorder()), onSubmitted: (v)=>_send(v))),
         const SizedBox(width: 6),
         FilledButton(onPressed: ()=>_send(_msgCtrl.text), child: const Icon(Icons.send)),
       ]))),
@@ -204,4 +196,4 @@ class _ChatPageState extends State<ChatPage> {
   }
 }
 
-class SettingsPage extends StatelessWidget { const SettingsPage({super.key}); @override Widget build(BuildContext context) { return const Center(child: Text('الإعدادات - المظهر محفوظ')); } }
+class SettingsPage extends StatelessWidget { const SettingsPage({super.key}); @override Widget build(BuildContext context) { return const Center(child: Text('الاعدادات')); } }
