@@ -1,0 +1,9 @@
+{
+  "name": "GPS LIMAM PRO",
+  "short_name": "GPS LIMAM",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a",
+  "icons": [{"src": "https://cdn-icons-png.flaticon.com/512/684/684908.png","sizes": "512x512","type": "image/png"}]
+}
