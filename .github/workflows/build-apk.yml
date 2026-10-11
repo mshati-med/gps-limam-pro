@@ -12,6 +12,7 @@ jobs:
         with:
           distribution: temurin
           java-version: 21
+
       - name: Setup Capacitor
         run: |
           npm init -y
@@ -22,11 +23,21 @@ jobs:
           npx cap add android
           cp google-services.json android/app/
           npx cap copy android
+
+      - name: Fix Kotlin Duplicate
+        run: |
+          echo "Fixing duplicate kotlin..."
+          FILE="android/app/build.gradle"
+          # نحذف jdk7 و jdk8 القديمة
+          sed -i "/dependencies {/a \ configurations.implementation {\n exclude group: 'org.jetbrains.kotlin', module: 'kotlin-stdlib-jdk7'\n exclude group: 'org.jetbrains.kotlin', module: 'kotlin-stdlib-jdk8'\n }" "$FILE"
+          cat "$FILE"
+
       - name: Build APK
         run: |
           cd android
           chmod +x gradlew
-          ./gradlew assembleDebug
+         ./gradlew assembleDebug
+
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
