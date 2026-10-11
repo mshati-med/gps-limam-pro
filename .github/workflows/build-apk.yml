@@ -12,7 +12,7 @@ jobs:
       - name: Fix android
         run: |
           rm -rf android
-          flutter create --project-name gps_limam --org com.gpslimam.app --platforms=android.
+          flutter create --project-name gps_limam --org com.gpslimam.app --platforms=android .
       - name: Build
         run: |
           flutter pub get
