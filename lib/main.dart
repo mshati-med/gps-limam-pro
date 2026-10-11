@@ -85,7 +85,7 @@ class _HomePageState extends State<HomePage> {
           IconButton(onPressed: (){ Share.share('موقعي: https://maps.google.com/?q=${_center.latitude},${_center.longitude}'); }, icon: const Icon(Icons.share)),
         ])))),
         Positioned(bottom: 22, right: 16, child: FloatingActionButton(heroTag: 'locate', onPressed: _locating? null : _locateMe, child: _locating? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.my_location))),
-        Positioned(bottom: 24, left: 16, child: Container(padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8), decoration: BoxDecoration(color: Theme.of(context).colorScheme.surface.withValues(alpha:.94), borderRadius: BorderRadius.circular(14)), child: Text(_status, style: const TextStyle(fontSize: 12)))),
+        Positioned(bottom: 24, left: 16, child: Container(padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8), decoration: BoxDecoration(color: Theme.of(context).colorScheme.surface.withOpacity(0.94), borderRadius: BorderRadius.circular(14)), child: Text(_status, style: const TextStyle(fontSize: 12)))),
       ]),
       const FriendsPage(),
       const ChatPage(),
@@ -137,7 +137,7 @@ class _FriendsPageState extends State<FriendsPage> {
         const SizedBox(height: 12),
         FilledButton(onPressed: _link, child: const Text('ربط الان')),
       ] else...[
-        Card(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.15), child: ListTile(leading: const Icon(Icons.link, color: Colors.green), title: Text('مرتبط مع: $partner'), subtitle: const Text('يمكنكم الدردشة الان'), trailing: IconButton(icon: const Icon(Icons.link_off), onPressed: _unlink))),
+        Card(color: Theme.of(context).colorScheme.primary.withOpacity(0.15), child: ListTile(leading: const Icon(Icons.link, color: Colors.green), title: Text('مرتبط مع: $partner'), subtitle: const Text('يمكنكم الدردشة الان'), trailing: IconButton(icon: const Icon(Icons.link_off), onPressed: _unlink))),
       ],
     ]));
   }
