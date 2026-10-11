@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>GPS LIMAM PRO</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0f172a">
+<style>
+body{margin:0;padding:14px;font-family:system-ui;background:#0f172a;color:#fff}
+.card{background:#1e293b;border-radius:16px;padding:14px;margin-bottom:12px}
+input,button{width:100%;padding:12px;border-radius:10px;border:0;margin:6px 0;font-size:16px;box-sizing:border-box}
+button{background:#22c55e;font-weight:800;cursor:pointer}
+#map{height:52vh;border-radius:16px;overflow:hidden;background:#0b1220}
+.small{font-size:11px;opacity:.6}
+</style>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+</head>
+<body>
+<h2>📍 GPS LIMAM PRO</h2>
+<div class="card">
+<input id="email" value="admin@gpslimam.app" placeholder="البريد">
+<input id="pass" type="password" value="123456" placeholder="كلمة السر">
+<button onclick="login()">دخول / تسجيل</button>
+<button onclick="startTrack()">▶️ بدء التتبع المباشر</button>
+<button onclick="stopTrack()" style="background:#ef4444;color:#fff">⏹️ إيقاف</button>
+<p id="status" class="small">غير متصل</p>
+</div>
+<div id="map" class="card">الخريطة ستظهر هنا بعد تشغيل GPS</div>
+
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyB-nAwR2o1v-jH8lDtaUiJWlcoqwu-tG8g",
+  authDomain: "gps-limam.firebaseapp.com",
+  projectId: "gps-limam",
+  storageBucket: "gps-limam.firebasestorage.app",
+  messagingSenderId: "956637485694",
+  appId: "1:956637485694:android:80a0e1424e0e57d6b6d62f"
+};
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+let watchId = null;
+let user = null;
+
+auth.onAuthStateChanged(u=>{
+  if(u){ user=u; document.getElementById('status').innerText='متصل: '+u.email; }
+});
+
+function login(){
+  auth.signInWithEmailAndPassword(email.value, pass.value)
+ .catch(()=>auth.createUserWithEmailAndPassword(email.value, pass.value)
+ .catch(e=>alert(e.message)));
+}
+
+function startTrack(){
+  if(!navigator.geolocation){ alert('جهازك لا يدعم GPS'); return; }
+  status.innerText='جاري التتبع... اسمح للموقع';
+  watchId = navigator.geolocation.watchPosition(pos=>{
+    const data = {
+      lat: pos.coords.latitude,
+      lng: pos.coords.longitude,
+      acc: pos.coords.accuracy,
+      speed: pos.coords.speed||0,
+      time: firebase.firestore.FieldValue.serverTimestamp(),
+      uid: user.uid,
+      email: user.email
+    };
+    db.collection('locations').doc(user.uid).set(data,{merge:true});
+    db.collection('history').add(data);
+    status.innerText = `مباشر: ${data.lat.toFixed(5)}, ${data.lng.toFixed(5)} دقة ${Math.round(data.acc)}m`;
+    map.innerHTML = `<iframe width="100%" height="100%" style="border:0" src="https://maps.google.com/maps?q=${data.lat},${data.lng}&z=17&output=embed"></iframe>`;
+  }, err=>alert(err.message), {enableHighAccuracy:true, maximumAge:0, timeout:15000});
+}
+
+function stopTrack(){
+  if(watchId) navigator.geolocation.clearWatch(watchId);
+  status.innerText='تم الإيقاف';
+}
+</script>
+</body>
+</html>
