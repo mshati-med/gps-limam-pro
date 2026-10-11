@@ -9,6 +9,10 @@ jobs:
         with:
           flutter-version: '3.22.0'
           channel: 'stable'
+      - name: Fix android project
+        run: |
+          rm -rf android
+          flutter create --platforms=android --project-name gps_limam --org com.gpslimam.app.
       - name: Get packages
         run: flutter pub get
       - name: Build APK
