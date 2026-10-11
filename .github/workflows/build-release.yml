@@ -1,45 +1,38 @@
-name: Build Release Signed APK
-on: [push]
+name: Build PRO Signed
+
+on:
+  push:
+    branches: [ main, master ]
+
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with: {node-version: 20}
-      - uses: actions/setup-java@v4
-        with: {distribution: temurin, java-version: 21}
-      - name: Setup Capacitor Pro
+      
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Build APK with Capacitor
         run: |
-          npm init -y
-          npm install @capacitor/core @capacitor/android @capacitor/cli @capacitor/geolocation
-          mkdir -p www
-          cp index.html manifest.json www/
-          npx cap init "GPS LIMAM PRO" com.gpslimam.app --web-dir=www
-          npx cap add android
-          cp google-services.json android/app/ 2>/dev/null || true
-          npx cap copy android
-      - name: Fix All
-        run: |
-          MANIFEST="android/app/src/main/AndroidManifest.xml"
-          sed -i 's/<uses-permission android:name="android.permission.INTERNET" \/>/<uses-permission android:name="android.permission.INTERNET" \/>\n <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" \/>\n <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" \/>\n <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" \/>\n <uses-permission android:name="android.permission.FOREGROUND_SERVICE" \/>\n <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" \/>\n <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" \/>/' "$MANIFEST"
-          FILE="android/app/build.gradle"
-          sed -i "/dependencies {/a \ configurations.implementation {\n exclude group: 'org.jetbrains.kotlin', module: 'kotlin-stdlib-jdk7'\n exclude group: 'org.jetbrains.kotlin', module: 'kotlin-stdlib-jdk8'\n }" "$FILE"
-          echo "android {
-            signingConfigs { release { storeFile file(\"gps-limam-release.keystore\"); storePassword \"GpsLimam2024!\"; keyAlias \"gpslimam\"; keyPassword \"GpsLimam2024!\" } }
-            buildTypes { release { signingConfig signingConfigs.release; minifyEnabled false } }
-          }" >> "$FILE"
-      - name: Create Keystore
-        run: |
-          cd android/app
-          keytool -genkey -v -keystore gps-limam-release.keystore -alias gpslimam -keyalg RSA -keysize 2048 -validity 10000 -storepass GpsLimam2024! -keypass GpsLimam2024! -dname "CN=GPS LIMAM PRO, OU=GPS, O=LIMAM, L=Nouakchott, S=Nouakchott, C=MR"
-      - name: Build Signed Release APK
-        run: |
+          npm install
+          npx cap sync android
           cd android
           chmod +x gradlew
-          ./gradlew assembleRelease
-      - name: Upload Signed APK
+          ./gradlew assembleDebug --stacktrace
+
+      - name: Rename APK
+        run: |
+          mv android/app/build/outputs/apk/debug/app-debug.apk GPS-LIMAM-PRO-v3-FRIENDS.apk
+
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: GPS-LIMAM-PRO-SIGNED-RELEASE
-          path: android/app/build/outputs/apk/release/app-release.apk
+          name: GPS-LIMAM-PRO-v3
+          path: GPS-LIMAM-PRO-v3-FRIENDS.apk
