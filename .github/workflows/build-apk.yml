@@ -12,7 +12,7 @@ jobs:
       - name: Fix android
         run: |
           rm -rf android
-          flutter create --platforms=android.
+          flutter create.
       - name: Build
         run: |
           flutter pub get
