@@ -7,224 +7,150 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
-:root{--bg:#0a0e1a;--card:#151b2d;--accent:#00ff88}
-*{box-sizing:border-box;margin:0;padding:0;font-family:system-ui}
-body{background:var(--bg);color:#fff;height:100vh;overflow:hidden}
-.header{background:#151b2d;padding:12px;text-align:center;border-bottom:2px solid var(--accent)}
-.screen{display:none;height:calc(100vh - 110px);overflow:auto;padding:12px}
-.screen.active{display:block}
-.card{background:var(--card);border-radius:14px;padding:14px;margin-bottom:10px;border:1px solid #2a3655}
-.input{width:100%;padding:12px;border-radius:10px;border:1px solid #2a3655;background:#0f1423;color:#fff;margin:6px 0}
-.btn{width:100%;padding:12px;border-radius:10px;border:none;font-weight:bold}
-.btn-primary{background:var(--accent);color:#000}
-.btn-sec{background:#2a3655;color:#fff}
+*{box-sizing:border-box}body{margin:0;background:#0b1220;color:#fff;font-family:system-ui}
+.header{background:#0f1a2e;padding:15px;text-align:center;border-bottom:2px solid #00ff88}
+.header h1{margin:0;color:#00ff88;font-size:20px}
+.card{background:#162032;margin:12px;padding:12px;border-radius:12px;border:1px solid #1e3a5f}
+input{width:100%;padding:12px;margin:6px 0;border-radius:8px;border:1px solid #333;background:#0b1220;color:#fff}
+.btn{width:100%;padding:12px;border:0;border-radius:8px;background:#00c853;color:#000;font-weight:bold;font-size:16px}
+.btn2{background:#1e88e5;color:#fff;margin-top:8px}
+.code-box{background:#000;padding:10px;border-radius:8px;text-align:center;border:2px dashed #00ff88;margin:8px 0}
 #map{height:55vh;border-radius:12px}
-.bottom-nav{position:fixed;bottom:0;left:0;right:0;background:var(--card);display:flex;justify-content:space-around;padding:8px 0;border-top:1px solid #2a3655}
-.nav-item{font-size:11px;color:#8b95b0;text-align:center;padding:6px}
-.nav-item.active{color:var(--accent)}
-.friend{padding:10px;border-bottom:1px solid #2a3655;display:flex;justify-content:space-between}
-.dot{width:10px;height:10px;border-radius:50%;display:inline-block}
-.online{background:var(--accent)}.offline{background:red}
+.status{padding:6px;text-align:center;font-size:13px}
+.online{color:#00ff88}.offline{color:#ff5252}
 </style>
 </head>
 <body>
 <div class="header">
-<h3>📍 GPS LIMAM PRO v3</h3>
-<div style="font-size:11px;color:#8b95b0">ربط الأصدقاء - شاهد موقع صديقك مباشرة</div>
-<div id="myCode" style="margin-top:6px;font-size:13px;color:var(--accent)">كودك:...</div>
+<h1>GPS LIMAM PRO v3 📍 ربط الأصدقاء</h1>
+<div id="myCodeDisplay" style="color:#00ff88;margin-top:5px">كودك: جاري التحميل...</div>
 </div>
 
-<!-- الخريطة -->
-<div id="screen-map" class="screen active">
 <div class="card">
-<input id="email" class="input" placeholder="ايميلك مثلا limam@gmail.com">
-<input id="password" class="input" type="password" placeholder="كلمة السر 123456">
-<button class="btn btn-primary" onclick="login()">دخول</button>
-<div style="margin-top:8px;font-size:12px">📍 <span id="myPos">لم يحدد بعد</span> | <span id="status">غير متصل</span></div>
-<button class="btn btn-sec" onclick="startShare()" id="shareBtn" style="margin-top:6px">▶️ بدء مشاركة موقعي</button>
+<input id="email" type="email" placeholder="Moossaa88@gmail.com" value="Moossaa88@gmail.com">
+<input id="password" type="password" placeholder="كلمة المرور">
+<button class="btn" onclick="login()">دخول</button>
+<div id="connStatus" class="status offline">📍 لم يحدد بعد | غير متصل</div>
+
+<div style="display:flex;gap:8px;margin-top:10px">
+<input id="friendCode" placeholder="أدخل كود صديقك للربط" style="flex:1">
+<button onclick="linkFriend()" style="padding:12px;background:#ff9800;border:0;border-radius:8px;font-weight:bold">ربط</button>
 </div>
+<div id="friendsList" style="margin-top:10px;font-size:13px"></div>
+</div>
+
+<div class="card">
 <div id="map"></div>
-<div class="card" style="font-size:12px">
-🟢 أنت | 🔵 صديقك<br>
-<span id="friendsOnMap">لا يوجد أصدقاء مربوطين</span>
-</div>
-</div>
-
-<!-- الأصدقاء -->
-<div id="screen-friends" class="screen">
-<div class="card">
-<h4>👥 ربط صديق</h4>
-<p style="font-size:11px;color:#8b95b0">أدخل كود صديقك ليظهر موقعه عندك</p>
-<input id="friendCode" class="input" placeholder="كود صديقك مثلا A7K9M2">
-<button class="btn btn-primary" onclick="linkFriend()">🔗 ربط</button>
-</div>
-<div id="friendsList" class="card">لا يوجد أصدقاء</div>
-<div class="card">
-<h4>📍 أماكني المحفوظة</h4>
-<button class="btn btn-sec" onclick="savePlace()">💾 حفظ مكاني الحالي</button>
-<div id="savedPlaces" style="margin-top:8px;font-size:12px"></div>
-</div>
-</div>
-
-<div class="bottom-nav">
-<div class="nav-item active" onclick="showScreen('map',this)">🗺️<br>الخريطة</div>
-<div class="nav-item" onclick="showScreen('friends',this)">👥<br>الأصدقاء</div>
 </div>
 
 <script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getFirestore, doc, setDoc, collection, addDoc, onSnapshot, query, where, serverTimestamp, getDoc, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+// سيتم تعبئة هذا تلقائيا من google-services.json أثناء البناء
+import { firebaseConfig } from './firebase-config.js';
 
-const firebaseConfig = {
-  apiKey: "AIzaSyC0v0R4a2b1c3d4e5f6g7h8i9j0k1l2m3n4",
-  authDomain: "gps-limam.firebaseapp.com",
-  projectId: "gps-limam",
-};
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getAuth, signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getFirestore, doc, setDoc, onSnapshot, collection, query, where, getDocs, updateDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
 const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
 const auth = getAuth(app);
+const db = getFirestore(app);
 
-let map, myMarker, watchId=null, isSharing=false;
-let friendMarkers={}, friendPolylines={};
-let myUid=null, myCode=null;
+let map, myMarker, myUid, myCode, watchId;
+let friendMarkers = {};
 
-function initMap(){
- map=L.map('map').setView([18.07,-15.95],13);
- L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+map = L.map('map').setView([18.0735, -15.9582], 13);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+
+function generateCode(){ return Math.random().toString(36).substring(2,7).toUpperCase(); }
+
+window.login = async function(){
+  const email = document.getElementById('email').value.trim();
+  const pass = document.getElementById('password').value.trim();
+  if(!email ||!pass) return alert('أدخل البريد وكلمة المرور');
+  try{
+    const cred = await signInWithEmailAndPassword(auth, email, pass);
+    startTracking(cred.user);
+  }catch(e){ alert('خطأ الدخول: '+e.message); console.error(e); }
 }
 
-window.showScreen=(name,el)=>{
- document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
- document.getElementById('screen-'+name).classList.add('active');
- document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
- if(el) el.classList.add('active');
- setTimeout(()=>map&&map.invalidateSize(),200);
-}
+onAuthStateChanged(auth, (user)=>{ if(user) startTracking(user); });
 
-window.login=async()=>{
- let email=document.getElementById('email').value.trim();
- let pass=document.getElementById('password').value.trim();
- if(!email||!pass) return alert('اكتب ايميل وكلمة سر');
- try{
-  await signInWithEmailAndPassword(auth,email,pass);
- }catch(e){
-  try{ await createUserWithEmailAndPassword(auth,email,pass); }catch(err){ return alert(err.message); }
- }
-};
+async function startTracking(user){
+  myUid = user.uid;
+  document.getElementById('connStatus').innerHTML = '<span class="online">🟢 متصل - '+user.email+'</span>';
 
-onAuthStateChanged(auth, async (user)=>{
- if(!user) return;
- myUid=user.uid;
- myCode=myUid.substring(0,6).toUpperCase();
- document.getElementById('myCode').innerText='كودك للربط: '+myCode+' (أرسله لصديقك)';
- await setDoc(doc(db,'users',myUid),{email:user.email,code:myCode,uid:myUid},{merge:true});
- listenFriends();
- listenLinkRequests();
-});
-
-window.startShare=async()=>{
- if(isSharing){ stopShare(); return; }
- if(!myUid) return alert('سجل دخول أولا');
- if(!navigator.geolocation) return alert('فعل GPS');
-
- watchId=navigator.geolocation.watchPosition(async pos=>{
-  let lat=pos.coords.latitude, lng=pos.coords.longitude;
-  document.getElementById('myPos').innerText=lat.toFixed(5)+','+lng.toFixed(5);
-  document.getElementById('status').innerText='أشارك موقعي الآن 🟢';
-  if(myMarker) myMarker.setLatLng([lat,lng]); else myMarker=L.marker([lat,lng],{icon:L.divIcon({html:'<div style="background:#00ff88;width:16px;height:16px;border-radius:50%;border:2px solid #fff"></div>'})}).addTo(map);
-  map.setView([lat,lng],15);
-  await setDoc(doc(db,'users',myUid),{lat,lng,lastUpdate:serverTimestamp(),online:true},{merge:true});
-  // حفظ مساري
-  await addDoc(collection(db,'tracks'),{uid:myUid,lat,lng,time:serverTimestamp()});
- }, e=>alert(e.message), {enableHighAccuracy:true});
- isSharing=true;
- document.getElementById('shareBtn').innerText='⏸️ إيقاف المشاركة';
-};
-
-function stopShare(){
- if(watchId!==null) navigator.geolocation.clearWatch(watchId);
- isSharing=false;
- document.getElementById('shareBtn').innerText='▶️ بدء مشاركة موقعي';
- document.getElementById('status').innerText='متوقف';
-}
-
-window.linkFriend=async()=>{
- let code=document.getElementById('friendCode').value.trim().toUpperCase();
- if(!code) return alert('اكتب كود صديقك');
- if(code===myCode) return alert('هذا كودك أنت!');
- let q=query(collection(db,'users'), where('code','==',code));
- let snap=await getDocs(q);
- if(snap.empty) return alert('الكود غير موجود');
- let friendDoc=snap.docs[0];
- let friendUid=friendDoc.id;
- await setDoc(doc(db,'links',myUid+'_'+friendUid),{from:myUid,to:friendUid,fromCode:myCode,toCode:code,time:serverTimestamp(),status:'linked'});
- await setDoc(doc(db,'links',friendUid+'_'+myUid),{from:friendUid,to:myUid,fromCode:code,toCode:myCode,time:serverTimestamp(),status:'linked'});
- alert('✅ تم الربط! الآن ستشاهد موقع '+friendDoc.data().email+' على الخريطة');
- document.getElementById('friendCode').value='';
-};
-
-function listenFriends(){
- onSnapshot(collection(db,'links'), snap=>{
-  let myLinks=[];
-  snap.forEach(d=>{
-   let data=d.data();
-   if(data.from===myUid || data.to===myUid) myLinks.push(data.from===myUid?data.to:data.from);
+  // احضار أو انشاء كودي
+  const myRef = doc(db, "users", myUid);
+  onSnapshot(myRef, (snap)=>{
+    if(snap.exists() && snap.data().myCode){
+      myCode = snap.data().myCode;
+    }else{
+      myCode = generateCode();
+      setDoc(myRef, {email:user.email, myCode:myCode, friends:[]}, {merge:true});
+    }
+    document.getElementById('myCodeDisplay').innerText = 'كودك للربط: '+myCode+' (أرسله لصديقك)';
+    if(snap.exists()) renderFriends(snap.data().friends||[]);
   });
-  let unique=[...new Set(myLinks)];
-  document.getElementById('friendsOnMap').innerText=unique.length>0? unique.length+' صديق مربوط' : 'لا يوجد أصدقاء مربوطين';
-  // استمع لمواقع الأصدقاء
-  unique.forEach(fUid=>{ listenFriendLocation(fUid); });
-  loadFriendsList(unique);
- });
-}
 
-function listenFriendLocation(fUid){
- onSnapshot(doc(db,'users',fUid), docSnap=>{
-  if(!docSnap.exists()) return;
-  let data=docSnap.data();
-  if(!data.lat) return;
-  let lat=data.lat, lng=data.lng;
-  if(friendMarkers[fUid]) friendMarkers[fUid].setLatLng([lat,lng]);
-  else {
-   friendMarkers[fUid]=L.marker([lat,lng],{icon:L.divIcon({html:'<div style="background:#0088ff;width:16px;height:16px;border-radius:50%;border:2px solid #fff"></div><div style="font-size:10px;background:#000;color:#fff;padding:2px 4px;border-radius:6px;margin-top:2px">'+(data.email||'صديق')+'</div>'})}).addTo(map);
-   friendPolylines[fUid]=L.polyline([],{color:'#0088ff',weight:3,dashArray:'5,5'}).addTo(map);
+  // تتبع موقعي
+  if(navigator.geolocation){
+    watchId = navigator.geolocation.watchPosition(async pos=>{
+      const {latitude, longitude} = pos.coords;
+      document.getElementById('connStatus').innerHTML = '<span class="online">📍 متصل | '+latitude.toFixed(5)+','+longitude.toFixed(5)+'</span>';
+      if(!myMarker){
+        myMarker = L.marker([latitude, longitude]).addTo(map).bindPopup('أنت 🟢');
+        map.setView([latitude, longitude], 15);
+      }else myMarker.setLatLng([latitude, longitude]);
+      await setDoc(doc(db, "locations", myUid), {lat:latitude,lng:longitude, email:user.email, code:myCode, updated:Date.now()}, {merge:true});
+    }, err=>console.error(err), {enableHighAccuracy:true});
   }
-  friendPolylines[fUid].addLatLng([lat,lng]);
- });
+
+  // الاستماع لأصدقائي
+  listenToFriends();
 }
 
-async function loadFriendsList(uids){
- let html='';
- for(let uid of uids){
-  let snap=await getDoc(doc(db,'users',uid));
-  if(snap.exists()){
-   let d=snap.data();
-   html+=`<div class="friend"><span><span class="dot ${d.online?'online':'offline'}"></span> ${d.email} - ${d.code}</span><span style="font-size:11px">${d.lat?d.lat.toFixed(4):''}</span></div>`;
-  }
- }
- document.getElementById('friendsList').innerHTML=html||'لا يوجد أصدقاء';
+function listenToFriends(){
+  onSnapshot(doc(db, "users", myUid), async (snap)=>{
+    if(!snap.exists()) return;
+    const friends = snap.data().friends||[];
+    renderFriends(friends);
+    friends.forEach(fCode=>{
+      // ابحث عن المستخدمين الذين كودهم = fCode
+      const q = query(collection(db, "users"), where("myCode","==",fCode));
+      onSnapshot(q, (qs)=>{
+        qs.forEach(userDoc=>{
+          const uid = userDoc.id;
+          // تابع موقعه
+          onSnapshot(doc(db, "locations", uid), locSnap=>{
+            if(!locSnap.exists()) return;
+            const d = locSnap.data();
+            if(!friendMarkers[uid]){
+              friendMarkers[uid] = L.marker([d.lat,d.lng], {icon: L.divIcon({html:'🔵', className:''})}).addTo(map).bindPopup(d.email);
+            }else friendMarkers[uid].setLatLng([d.lat,d.lng]);
+          });
+        });
+      });
+    });
+  });
 }
 
-function listenLinkRequests(){ /* يمكن اضافة اشعارات */ }
-
-window.savePlace=()=>{
- if(!myMarker) return alert('شارك موقعك أولا');
- let name=prompt('اسم هذا المكان؟ مثلا: المنزل');
- if(!name) return;
- let latlng=myMarker.getLatLng();
- let places=JSON.parse(localStorage.getItem('places')||'[]');
- places.push({name,lat:latlng.lat,lng:latlng.lng,date:new Date().toLocaleString('ar')});
- localStorage.setItem('places',JSON.stringify(places));
- renderPlaces();
-};
-
-function renderPlaces(){
- let places=JSON.parse(localStorage.getItem('places')||'[]');
- document.getElementById('savedPlaces').innerHTML=places.map(p=>`<div style="padding:6px;border-bottom:1px solid #2a3655">📍 ${p.name} - ${p.lat.toFixed(4)},${p.lng.toFixed(4)}</div>`).join('')||'لا توجد أماكن محفوظة';
+function renderFriends(list){
+  if(!list.length) document.getElementById('friendsList').innerHTML = 'لا يوجد أصدقاء مربوطين بعد';
+  else document.getElementById('friendsList').innerHTML = 'أصدقاؤك: '+list.map(c=>'🔵 '+c).join(' | ');
 }
-renderPlaces();
-initMap();
+
+window.linkFriend = async function(){
+  const code = document.getElementById('friendCode').value.trim().toUpperCase();
+  if(!code) return alert('أدخل كود صديقك');
+  if(code === myCode) return alert('لا يمكنك ربط نفسك');
+  // تحقق هل الكود موجود
+  const q = query(collection(db, "users"), where("myCode","==",code));
+  const snap = await getDocs(q);
+  if(snap.empty) return alert('الكود غير موجود');
+  await updateDoc(doc(db, "users", myUid), {friends: arrayUnion(code)});
+  alert('تم ربط الصديق بنجاح ✅ '+code);
+  document.getElementById('friendCode').value='';
+}
 </script>
 </body>
 </html>
