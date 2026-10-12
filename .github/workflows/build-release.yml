@@ -1,4 +1,4 @@
-name: Build PRO v3 Friends
+name: Build PRO v3 Friends FINAL
 on:
   push:
     branches: [ main, master ]
@@ -15,33 +15,58 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Fix package name from google-services.json
+      - name: Auto Generate Firebase Config from google-services.json
         run: |
-          # استخراج اسم الحزمة الحقيقي من google-services.json
-          if [ -f google-services.json ]; then
-            PKG=$(python3 -c "import json; data=json.load(open('google-services.json')); print(data['client'][0]['client_info']['android_client_info']['package_name'])")
-            echo "Found package name: $PKG"
-            echo "PKG_NAME=$PKG" >> $GITHUB_ENV
-          else
-            echo "PKG_NAME=com.limam.gpspro" >> $GITHUB_ENV
-          fi
+          python3 << 'PY'
+          import json, pathlib
+          gs = pathlib.Path("google-services.json")
+          if not gs.exists():
+              raise SystemExit("google-services.json غير موجود في الجذر!")
+          data=json.load(open(gs))
+          client=data['client'][0]
+          api_key=client['api_key'][0]['current_key']
+          pkg=client['client_info']['android_client_info']['package_name']
+          proj=data['project_info']['project_id']
+          proj_number=data['project_info']['project_number']
+          mob_sdk=client['client_info']['mobilesdk_app_id']
+          storage=proj+".appspot.com"
+          print(f"Package: {pkg}")
+          print(f"Project: {proj}")
+          # انشاء ملف firebase-config.js للويب
+          config = f"""
+          export const firebaseConfig = {{
+            apiKey: "{api_key}",
+            authDomain: "{proj}.firebaseapp.com",
+            projectId: "{proj}",
+            storageBucket: "{storage}",
+            messagingSenderId: "{proj_number}",
+            appId: "{mob_sdk}"
+          }};
+          export const PACKAGE_NAME = "{pkg}";
+          """
+          open("firebase-config.js","w").write(config)
+          print(config)
+          # حفظ اسم الحزمة
+          open("pkg.txt","w").write(pkg)
+          PY
 
       - name: Build APK
         run: |
+          PKG=$(cat pkg.txt)
+          echo "Building with package: $PKG"
           echo '{"name":"gps-limam","type":"module","dependencies":{"@capacitor/core":"5.7.0","@capacitor/cli":"5.7.0","@capacitor/android":"5.7.0"}}' > package.json
           npm install --silent
           mkdir -p www
           cp index.html www/index.html
-          [ -f manifest.json ] && cp manifest.json www/ || true
-          echo "{\"appId\":\"$PKG_NAME\",\"appName\":\"GPS LIMAM v3\",\"webDir\":\"www\"}" > capacitor.config.json
-          echo "Using appId: $PKG_NAME"
+          cp firebase-config.js www/firebase-config.js
+          echo "{\"appId\":\"$PKG\",\"appName\":\"GPS LIMAM PRO v3\",\"webDir\":\"www\"}" > capacitor.config.json
           npx cap add android
-          [ -f google-services.json ] && cp google-services.json android/app/ || true
+          cp google-services.json android/app/google-services.json
           cd android
           chmod +x gradlew
-          ./gradlew assembleDebug --no-daemon -x lint
+         ./gradlew assembleDebug --no-daemon -x lint
 
       - uses: actions/upload-artifact@v4
         with:
-          name: GPS-LIMAM-v3-FRIENDS
+          name: GPS-LIMAM-v3-FINAL-FIXED
           path: android/app/build/outputs/apk/debug/app-debug.apk
