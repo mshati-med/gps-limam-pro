@@ -1,4 +1,4 @@
-name: Build v3
+name: Build v3 FINAL FIX
 on:
   push:
     branches: [main]
@@ -15,48 +15,24 @@ jobs:
           java-version: '21'
           distribution: temurin
 
-      - name: Auto Fix Firebase Config
-        run: |
-          python3 << 'PY'
-          import json, pathlib
-          gs = pathlib.Path("google-services.json")
-          data = json.load(open(gs))
-          client = data['client'][0]
-          api_key = client['api_key'][0]['current_key']
-          pkg = client['client_info']['android_client_info']['package_name']
-          proj = data['project_info']['project_id']
-          proj_num = data['project_info']['project_number']
-          app_id = client['client_info']['mobilesdk_app_id']
-          cfg = f'''export const firebaseConfig = {{
-            apiKey: "{api_key}",
-            authDomain: "{proj}.firebaseapp.com",
-            projectId: "{proj}",
-            storageBucket: "{proj}.appspot.com",
-            messagingSenderId: "{proj_num}",
-            appId: "{app_id}"
-          }};'''
-          open("firebase-config.js","w").write(cfg)
-          open("pkg.txt","w").write(pkg)
-          print(f"PKG={pkg} API={api_key[:10]}...")
-          PY
-
       - name: Build APK
         run: |
-          PKG=$(cat pkg.txt)
-          echo "Building $PKG"
           npm init -y
           npm install @capacitor/core@5.7.0 @capacitor/cli@5.7.0 @capacitor/android@5.7.0 --silent
           mkdir -p www
           cp index.html www/index.html
-          cp firebase-config.js www/firebase-config.js
-          echo "{\"appId\":\"$PKG\",\"appName\":\"GPS LIMAM v3\",\"webDir\":\"www\"}" > capacitor.config.json
+          echo '{"appId":"com.gpslimam.app","appName":"GPS LIMAM v3","webDir":"www"}' > capacitor.config.json
           npx cap add android
           cp google-services.json android/app/google-services.json
+          # ترقية Gradle ليدعم Java 21
+          sed -i 's/gradle-8.0.2/gradle-8.7/g' android/gradle/wrapper/gradle-wrapper.properties
+          sed -i 's/gradle-8.0/gradle-8.7/g' android/gradle/wrapper/gradle-wrapper.properties
+          cat android/gradle/wrapper/gradle-wrapper.properties
           cd android
           chmod +x gradlew
           ./gradlew assembleDebug --no-daemon -x lint
 
       - uses: actions/upload-artifact@v4
         with:
-          name: GPS-LIMAM-v3-FINAL-ALLFIX
+          name: GPS-LIMAM-v3-APK-FIXED
           path: android/app/build/outputs/apk/debug/app-debug.apk
