@@ -4,118 +4,96 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>GPS LIMAM v3 PRO</title>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
-*{box-sizing:border-box}body{margin:0;background:#0b1220;color:#fff;font-family:system-ui}
-.header{background:#0f1a2e;padding:14px;text-align:center;border-bottom:2px solid #00ff88}
-.btn{width:100%;padding:12px;border:0;border-radius:10px;background:#00c853;color:#000;font-weight:bold;font-size:16px}
-input{width:100%;padding:12px;margin:6px 0;border-radius:10px;border:1px solid #334;background:#0b1220;color:#fff}
-.card{background:#162032;margin:10px;padding:12px;border-radius:12px;border:1px solid #1e3a5f}
-#map{height:52vh;border-radius:12px}
-.code{background:#000;border:2px dashed #00ff88;padding:10px;text-align:center;border-radius:10px;margin:8px 0;font-weight:bold;color:#00ff88}
+body{background:#0f172a;color:#fff;font-family:sans-serif;margin:0;padding:10px;text-align:center}
+.card{background:#1e293b;padding:15px;border-radius:16px;margin:12px 0}
+input{width:90%;padding:12px;margin:6px;border-radius:10px;border:0;text-align:center;font-size:16px}
+.btn{width:94%;padding:14px;border:0;border-radius:12px;font-weight:bold;margin-top:8px;font-size:16px}
+.green{background:#22c55e;color:#000}
+.orange{background:#fb923c;color:#000}
+#log{font-size:13px;color:#fcd34d;min-height:22px;margin:6px}
+#mycode{color:#22f59e;font-size:22px}
 </style>
 </head>
 <body>
-<div class="header">
-<div style="font-weight:bold;color:#00ff88;font-size:18px">GPS LIMAM v3 PRO - ربط الأصدقاء</div>
-<div id="myCodeDisplay" style="margin-top:6px">كودك:...</div>
-<div id="connStatus" style="font-size:12px;margin-top:4px">غير متصل</div>
-</div>
-
+<h3 style="color:#22f59e">GPS LIMAM v3 PRO</h3>
+<div>كودك: <b id="mycode">...</b></div>
+<div id="status">🔴 غير متصل</div>
+<div id="log">جاهز</div>
 <div class="card">
-<input id="email" type="email" placeholder="البريد" value="Moossaa88@gmail.com">
-<input id="password" type="password" placeholder="كلمة المرور">
-<button class="btn" onclick="login()">دخول وبدء التتبع</button>
-<div style="display:flex;gap:8px;margin-top:10px">
-<input id="friendCode" placeholder="كود صديقك" style="flex:1">
-<button onclick="linkFriend()" style="padding:12px;background:#ff9800;border:0;border-radius:10px;font-weight:bold">ربط</button>
+<input id="email" value="moossaa88@gmail.com">
+<input id="pass" type="password" placeholder="كلمة المرور" value="123456">
+<button class="btn green" onclick="login()">دخول وبدء التتبع</button>
+<div style="display:flex;gap:6px;justify-content:center;margin-top:10px">
+<button class="btn orange" style="width:70px" onclick="linkFriend()">ربط</button>
+<input id="fcode" placeholder="كود صديقك" style="width:55%">
 </div>
-<div id="friendsList" style="margin-top:8px;font-size:13px"></div>
 </div>
-
-<div class="card"><div id="map"></div></div>
-
-<script type="module">
-import { firebaseConfig } from './firebase-config.js';
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getAuth, signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { getFirestore, doc, setDoc, onSnapshot, collection, query, where, getDocs, updateDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
-
-let map=L.map('map').setView([18.0735,-15.9582],13);
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-let myMarker, myUid, myCode;
-let friendMarkers={};
-
-function genCode(){return Math.random().toString(36).substring(2,7).toUpperCase();}
-
-window.login=async()=>{
-  const e=document.getElementById('email').value.trim();
-  const p=document.getElementById('password').value.trim();
-  if(!e||!p) return alert('أدخل البريد والكلمة');
-  try{const c=await signInWithEmailAndPassword(auth,e,p); start(c.user);}catch(err){alert(err.message)}
+<div id="map" style="width:100%;height:420px;background:#111;border-radius:14px"></div>
+<div id="friendsList"></div>
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyB02jgMccOV78NxFkWLwteb134p7l14w8",
+  authDomain: "gps-limam.firebaseapp.com",
+  projectId: "gps-limam",
+  storageBucket: "gps-limam.firebasestorage.app",
+  messagingSenderId: "956637485694",
+  appId: "1:956637485694:web:ed750daf9a3fd99eb6d62f"
 };
-onAuthStateChanged(auth,u=>{if(u) start(u);});
-
-async function start(user){
-  myUid=user.uid;
-  document.getElementById('connStatus').innerHTML='🟢 متصل - '+user.email;
-  const myRef=doc(db,"users",myUid);
-  onSnapshot(myRef,s=>{
-    if(s.exists()&&s.data().myCode){myCode=s.data().myCode;}
-    else{myCode=genCode();setDoc(myRef,{email:user.email,myCode:myCode,friends:[]},{merge:true});}
-    document.getElementById('myCodeDisplay').innerText='كودك للربط: '+myCode;
-    if(s.exists()) render(s.data().friends||[]);
+const log = m=>{document.getElementById('log').innerText=m;}
+let db,auth,myUid,myCode,map,myMarker,friendMarkers={};
+function init(){
+ firebase.initializeApp(firebaseConfig);
+ auth=firebase.auth(); db=firebase.firestore();
+ map=L.map('map').setView([18,-15.9],12);
+ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+ auth.onAuthStateChanged(u=>{if(u){myUid=u.uid;document.getElementById('status').innerText="🟢 متصل - "+u.email;startTracking();}});
+}
+async function login(){
+ const e=document.getElementById('email').value.trim().toLowerCase();
+ const p=document.getElementById('pass').value.trim();
+ log("جاري الدخول...");
+ try{await auth.signInWithEmailAndPassword(e,p);log("تم الدخول ✅");}
+ catch(err){try{await auth.createUserWithEmailAndPassword(e,p);log("تم إنشاء حساب ✅");}catch(e2){log("خطأ: "+e2.message);}}
+}
+async function startTracking(){
+ myCode=Math.random().toString(36).substring(2,7).toUpperCase();
+ document.getElementById('mycode').innerText=myCode;
+ await db.collection("users").doc(myUid).set({code:myCode,email:auth.currentUser.email,lat:0,lng:0,updated:Date.now()},{merge:true});
+ log("كودك: "+myCode);
+ navigator.geolocation.watchPosition(async pos=>{
+  const lat=pos.coords.latitude,lng=pos.coords.longitude;
+  await db.collection("users").doc(myUid).update({lat,lng,updated:Date.now()});
+  if(!myMarker){myMarker=L.marker([lat,lng]).addTo(map).bindPopup("أنت");map.setView([lat,lng],15);}
+  else myMarker.setLatLng([lat,lng]);
+ },e=>{log("فعل GPS: "+e.message)},{enableHighAccuracy:true});
+ listenFriends();
+}
+async function linkFriend(){
+ const c=document.getElementById('fcode').value.trim().toUpperCase();
+ const q=await db.collection("users").where("code","==",c).get();
+ if(q.empty){log("الكود غير موجود");return;}
+ await db.collection("users").doc(myUid).collection("friends").doc(q.docs[0].id).set({code:c});
+ log("تم الربط ✅");
+}
+function listenFriends(){
+ db.collection("users").doc(myUid).collection("friends").onSnapshot(snap=>{
+  snap.forEach(d=>{
+   db.collection("users").doc(d.id).onSnapshot(doc=>{
+    if(!doc.exists)return;
+    const data=doc.data();
+    if(!friendMarkers[d.id])friendMarkers[d.id]=L.marker([data.lat,data.lng]).addTo(map).bindPopup(data.code);
+    else friendMarkers[d.id].setLatLng([data.lat,data.lng]);
+   });
   });
-  if(navigator.geolocation){
-    navigator.geolocation.watchPosition(async pos=>{
-      const {latitude,longitude}=pos.coords;
-      if(!myMarker){myMarker=L.marker([latitude,longitude]).addTo(map).bindPopup('أنت 🟢'); map.setView([latitude,longitude],15);}
-      else myMarker.setLatLng([latitude,longitude]);
-      await setDoc(doc(db,"locations",myUid),{lat:latitude,lng:longitude,email:user.email,code:myCode,updated:Date.now()},{merge:true});
-    },null,{enableHighAccuracy:true});
-  }
-  listen();
+ });
 }
-function listen(){
-  onSnapshot(doc(db,"users",myUid),async snap=>{
-    if(!snap.exists()) return;
-    const friends=snap.data().friends||[];
-    render(friends);
-    friends.forEach(code=>{
-      const q=query(collection(db,"users"),where("myCode","==",code));
-      onSnapshot(q,qs=>{
-        qs.forEach(uDoc=>{
-          const uid=uDoc.id;
-          onSnapshot(doc(db,"locations",uid),ls=>{
-            if(!ls.exists()) return;
-            const d=ls.data();
-            if(!friendMarkers[uid]) friendMarkers[uid]=L.marker([d.lat,d.lng],{icon:L.divIcon({html:'🔵',className:''})}).addTo(map).bindPopup(d.email+' - '+d.code);
-            else friendMarkers[uid].setLatLng([d.lat,d.lng]);
-          });
-        });
-      });
-    });
-  });
-}
-function render(list){
-  document.getElementById('friendsList').innerHTML=list.length?'أصدقاؤك: '+list.join(' | '):'لا يوجد أصدقاء بعد';
-}
-window.linkFriend=async()=>{
-  const code=document.getElementById('friendCode').value.trim().toUpperCase();
-  if(!code) return alert('أدخل الكود');
-  if(code===myCode) return alert('لا يمكنك ربط نفسك');
-  const q=query(collection(db,"users"),where("myCode","==",code));
-  const s=await getDocs(q);
-  if(s.empty) return alert('الكود غير موجود');
-  await updateDoc(doc(db,"users",myUid),{friends:arrayUnion(code)});
-  alert('تم الربط ✅ '+code);
-  document.getElementById('friendCode').value='';
-}
+window.onload=init;
 </script>
 </body>
 </html>
