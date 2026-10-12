@@ -12,7 +12,7 @@ jobs:
           node-version: 20
       - uses: actions/setup-java@v4
         with:
-          java-version: '21'
+          java-version: '17'
           distribution: temurin
 
       - name: Build APK
@@ -24,10 +24,12 @@ jobs:
           echo '{"appId":"com.gpslimam.app","appName":"GPS LIMAM v3","webDir":"www"}' > capacitor.config.json
           npx cap add android
           cp google-services.json android/app/google-services.json
-          # ترقية Gradle ليدعم Java 21
-          sed -i 's/gradle-8.0.2/gradle-8.7/g' android/gradle/wrapper/gradle-wrapper.properties
-          sed -i 's/gradle-8.0/gradle-8.7/g' android/gradle/wrapper/gradle-wrapper.properties
-          cat android/gradle/wrapper/gradle-wrapper.properties
+          # إجبار المشروع على استخدام Java 17 وليس 21
+          sed -i 's/JavaVersion.VERSION_21/JavaVersion.VERSION_17/g' android/app/build.gradle || true
+          sed -i 's/VERSION_21/VERSION_17/g' android/app/build.gradle || true
+          sed -i 's/21/17/g' android/variables.gradle || true
+          sed -i 's/compileSdkVersion project.ext.compileSdkVersion/compileSdkVersion 33/g' android/app/build.gradle || true
+          cat android/app/build.gradle | grep -i java
           cd android
           chmod +x gradlew
           ./gradlew assembleDebug --no-daemon -x lint
