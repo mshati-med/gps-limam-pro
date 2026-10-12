@@ -14,7 +14,6 @@ jobs:
         with:
           java-version: '17'
           distribution: temurin
-
       - name: Build APK
         run: |
           npm init -y
@@ -24,16 +23,11 @@ jobs:
           echo '{"appId":"com.gpslimam.app","appName":"GPS LIMAM v3","webDir":"www"}' > capacitor.config.json
           npx cap add android
           cp google-services.json android/app/google-services.json
-          # إجبار المشروع على استخدام Java 17 وليس 21
-          sed -i 's/JavaVersion.VERSION_21/JavaVersion.VERSION_17/g' android/app/build.gradle || true
           sed -i 's/VERSION_21/VERSION_17/g' android/app/build.gradle || true
-          sed -i 's/21/17/g' android/variables.gradle || true
-          sed -i 's/compileSdkVersion project.ext.compileSdkVersion/compileSdkVersion 33/g' android/app/build.gradle || true
-          cat android/app/build.gradle | grep -i java
+          sed -i 's/JavaVersion.VERSION_21/JavaVersion.VERSION_17/g' android/app/build.gradle || true
           cd android
           chmod +x gradlew
           ./gradlew assembleDebug --no-daemon -x lint
-
       - uses: actions/upload-artifact@v4
         with:
           name: GPS-LIMAM-v3-APK-FIXED
